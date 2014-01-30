@@ -14,11 +14,26 @@ namespace InsightPreprocessor
 
         static String projpath;
         static XmlWriter xmldoc;
+        static bool CensorMode;
 
         static void Main(string[] args)
         {
             Console.WriteLine("Enter path of project directory:");
             projpath = Console.ReadLine();
+
+            Console.WriteLine("Enable censor mode? (Y/N)");
+
+            String censor = Console.ReadLine();
+
+            if (censor == "Y" || censor == "y")
+            {
+                CensorMode = true;
+                Console.WriteLine("Censor Mode Enabled: Output will have personal information removed.");
+            }
+            else
+            {
+                CensorMode = false;
+            }
 
             try
             {
@@ -48,7 +63,7 @@ namespace InsightPreprocessor
                     #region Dataset Search and Process logic
                     switch (file.Name)
                     {
-                        case "autopsy.db":
+                        case "ghautopsy.db":
                             Console.ForegroundColor = ConsoleColor.DarkGreen;
                             Console.WriteLine("Autopsy file found! Processing...");
                             Console.ForegroundColor = ConsoleColor.White;
@@ -116,40 +131,79 @@ namespace InsightPreprocessor
             {
                 SQLiteConnection sqldb = new SQLiteConnection("Data Source=" + path + "; Version=3;");
                 sqldb.Open();
+                SQLiteDataReader queryresults;
 
                 #region Get Web History
                 SQLiteCommand getweb = new SQLiteCommand(sqldb);
                 getweb.CommandText = "SELECT DISTINCT artifact_id FROM blackboard_attributes WHERE artifact_id IN (SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = 4) AND attribute_type_id = 33";
-                SQLiteDataReader webresults = getweb.ExecuteReader();
+                queryresults = getweb.ExecuteReader();
 
                 //Loop through each web history artifact
-                while (webresults.Read())
+                while (queryresults.Read())
                 {
+                    String artifactID = queryresults.GetValue(0).ToString();
+
                     SQLiteCommand getdate = new SQLiteCommand(sqldb);
-                    getdate.CommandText = "SELECT value_int64 FROM blackboard_attributes WHERE (artifact_id = " + webresults.GetValue(0).ToString() + " AND attribute_type_id = 33)";
+                    getdate.CommandText = "SELECT value_int64 FROM blackboard_attributes WHERE (artifact_id = " + artifactID + " AND attribute_type_id = 33)";
                     String date = getdate.ExecuteScalar().ToString();
 
                     SQLiteCommand geturl = new SQLiteCommand(sqldb);
-                    geturl.CommandText = "SELECT value_text FROM blackboard_attributes WHERE (artifact_id = " + webresults.GetValue(0).ToString() + " AND attribute_type_id = 1)";
+                    geturl.CommandText = "SELECT value_text FROM blackboard_attributes WHERE (artifact_id = " + artifactID + " AND attribute_type_id = 1)";
                     String url = geturl.ExecuteScalar().ToString();
 
                     SQLiteCommand getbrowser = new SQLiteCommand(sqldb);
-                    getbrowser.CommandText = "SELECT value_text FROM blackboard_attributes WHERE (artifact_id = " + webresults.GetValue(0).ToString() + " AND attribute_type_id = 4)";
+                    getbrowser.CommandText = "SELECT value_text FROM blackboard_attributes WHERE (artifact_id = " + artifactID + " AND attribute_type_id = 4)";
                     String browser = getbrowser.ExecuteScalar().ToString();
 
-                    DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-                    DateTime convertedDate = epoch.AddSeconds(int.Parse(date));
-                    String datestring = convertedDate.ToLongDateString() + " " + convertedDate.ToLongTimeString();
+                    date = ConvertTimestamp(date);
 
-                    AddEvent("autwh" + webresults.GetValue(0).ToString(), datestring, null, url, "LightBlue", "Browser Name: " + browser, null, url);
+                    //Censoring
+                    if (CensorMode == true) url = "Information Removed";
+
+                    AddEvent("autwh" + artifactID, date, null, url, "LightBlue", "Browser Name: " + browser, null, url);
 
                 }
 
                 #endregion
 
 
-                
-                
+                #region Get Installed Programs
+
+                SQLiteCommand getprograms = new SQLiteCommand(sqldb);
+                getprograms.CommandText = "SELECT DISTINCT artifact_id FROM blackboard_attributes WHERE artifact_id IN (SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = 8) AND attribute_type_id = 2";
+                queryresults = getprograms.ExecuteReader();
+
+                //Loop through each installed program artifact
+                while (queryresults.Read())
+                {
+                    String artifactID = queryresults.GetValue(0).ToString();
+
+                    SQLiteCommand getdate = new SQLiteCommand(sqldb);
+                    getdate.CommandText = "SELECT value_int64 FROM blackboard_attributes WHERE (artifact_id = " + artifactID + " AND attribute_type_id = 2)";
+                    String date = getdate.ExecuteScalar().ToString();
+
+                    //Check if date is invalid, if so, print error and go to next iteration
+                    if (int.Parse(date) < 0)
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        Console.WriteLine("Warning: Artifact ID: " + artifactID + " was found to have invalid date. Artifact ommitted.");
+                        Console.ForegroundColor = ConsoleColor.White;
+                        continue;
+                    }
+
+                    SQLiteCommand getprogname = new SQLiteCommand(sqldb);
+                    getprogname.CommandText = "SELECT value_text FROM blackboard_attributes WHERE (artifact_id = " + artifactID + " AND attribute_type_id = 4)";
+                    //This string may need to be sanitized if problems with escape characters occur
+                    String programname = getprogname.ExecuteScalar().ToString();
+
+                    date = ConvertTimestamp(date);
+
+                    AddEvent("autip" + artifactID, date, null, programname, "Green", "The application: " + programname + " was installed on " + date + ".", null, null);
+
+                }
+
+                #endregion
+
 
             }
 
@@ -185,6 +239,15 @@ namespace InsightPreprocessor
             xmldoc.WriteString(description);
             xmldoc.WriteEndElement();
 
+        }
+
+        public static String ConvertTimestamp(String timestamp)
+        {
+            DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+            DateTime convertedDate = epoch.AddSeconds(int.Parse(timestamp));
+            String datestring = convertedDate.ToLongDateString() + " " + convertedDate.ToLongTimeString();
+
+            return datestring;
         }
     }
 }
