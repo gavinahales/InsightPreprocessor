@@ -205,6 +205,53 @@ namespace InsightPreprocessor
                 #endregion
 
 
+                #region Get Attached Devices
+
+                SQLiteCommand getdevices = new SQLiteCommand(sqldb);
+                getdevices.CommandText = "SELECT DISTINCT artifact_id FROM blackboard_attributes WHERE artifact_id IN (SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = 11) AND attribute_type_id = 2";
+                queryresults = getdevices.ExecuteReader();
+
+                //Loop through each installed program artifact
+                while (queryresults.Read())
+                {
+                    String artifactID = queryresults.GetValue(0).ToString();
+
+                    SQLiteCommand getdate = new SQLiteCommand(sqldb);
+                    getdate.CommandText = "SELECT value_int64 FROM blackboard_attributes WHERE (artifact_id = " + artifactID + " AND attribute_type_id = 2)";
+                    String date = getdate.ExecuteScalar().ToString();
+
+                    //Check if date is invalid, if so, print error and go to next iteration
+                    if (int.Parse(date) < 0)
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        Console.WriteLine("Warning: Artifact ID: " + artifactID + " was found to have invalid date. Artifact ommitted.");
+                        Console.ForegroundColor = ConsoleColor.White;
+                        continue;
+                    }
+
+                    SQLiteCommand getdevname = new SQLiteCommand(sqldb);
+                    getdevname.CommandText = "SELECT value_text FROM blackboard_attributes WHERE (artifact_id = " + artifactID + " AND attribute_type_id = 18)";
+                    String devicename = getdevname.ExecuteScalar().ToString();
+
+                    SQLiteCommand getdevID = new SQLiteCommand(sqldb);
+                    getdevID.CommandText = "SELECT value_text FROM blackboard_attributes WHERE (artifact_id = " + artifactID + " AND attribute_type_id = 20)";
+                    String deviceID = getdevID.ExecuteScalar().ToString();
+
+                    date = ConvertTimestamp(date);
+
+                    AddEvent("autad" + artifactID, date, null, devicename, "Yellow", "The device: " + devicename + " with an ID of " + deviceID + " was attached on " + date + ".", null, null);
+
+                }
+
+                #endregion
+
+                #region Get EXIF Data
+
+                //Code to pull EXIF photo data from Autopsy
+
+                #endregion
+
+
             }
 
             catch (Exception e)
