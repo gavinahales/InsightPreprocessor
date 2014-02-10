@@ -247,7 +247,30 @@ namespace InsightPreprocessor
 
                 #region Get EXIF Data
 
-                //Code to pull EXIF photo data from Autopsy
+                SQLiteCommand getEXIFArtifact = new SQLiteCommand(sqldb);
+                getEXIFArtifact.CommandText = "SELECT artifact_id, obj_id FROM blackboard_attributes WHERE artifact_type_id = 16";
+                queryresults = getEXIFArtifact.ExecuteReader();
+
+                while (queryresults.Read())
+                {
+                    String artifactID = queryresults.GetValue(0).ToString();
+                    String objID = queryresults.GetValue(1).ToString();
+
+                    SQLiteDataReader fileQueryResults = new SQLiteDataReader();
+
+                    SQLiteCommand getFileInfo = new SQLiteCommand(sqldb);
+                    getFileInfo.CommandText = "SELECT name, parent_path, mtime, atime FROM tsk_files WHERE obj_id = " + objID;
+
+                    fileQueryResults = getFileInfo.ExecuteReader();
+                    fileQueryResults.Read();
+                    String filename = fileQueryResults.GetValue(0).ToString();
+                    String parentpath = fileQueryResults.GetValue(1).ToString();
+                    String modtime = fileQueryResults.GetValue(2).ToString();
+                    String accesstime = fileQueryResults.GetValue(3).ToString();
+
+
+
+                }
 
                 #endregion
 
