@@ -24,6 +24,7 @@ namespace InsightPreprocessor
             Console.WriteLine("Enable censor mode? (Y/N)");
 
             String censor = Console.ReadLine();
+            bool processSuccess = true;
 
             if (censor == "Y" || censor == "y")
             {
@@ -77,6 +78,7 @@ namespace InsightPreprocessor
                                 Console.ForegroundColor = ConsoleColor.DarkRed;
                                 Console.WriteLine("WARNING!! Failed to process Autopsy file. Preprocess output may be incomplete or corrupt.");
                                 Console.ForegroundColor = ConsoleColor.White;
+                                processSuccess = false;
                             }
                             
                             break;
@@ -94,6 +96,7 @@ namespace InsightPreprocessor
                                 Console.ForegroundColor = ConsoleColor.DarkRed;
                                 Console.WriteLine("WARNING!! Failed to process L2T file. Preprocess output may be incomplete or corrupt.");
                                 Console.ForegroundColor = ConsoleColor.White;
+                                processSuccess = false;
                             }
 
                             break;
@@ -109,9 +112,18 @@ namespace InsightPreprocessor
                 xmldoc.WriteEndDocument();
                 xmldoc.Close();
 
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("SUCCESS! Press any key to close.");
-                Console.ForegroundColor = ConsoleColor.White;
+                if (processSuccess)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("SUCCESS! Press any key to close.");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("FAILED! Process did not complete successfully.");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
                 
             }
             catch (DirectoryNotFoundException e)
@@ -248,7 +260,7 @@ namespace InsightPreprocessor
                 #region Get EXIF Data
 
                 SQLiteCommand getEXIFArtifact = new SQLiteCommand(sqldb);
-                getEXIFArtifact.CommandText = "SELECT artifact_id, obj_id FROM blackboard_attributes WHERE artifact_type_id = 16";
+                getEXIFArtifact.CommandText = "SELECT artifact_id, obj_id FROM blackboard_artifacts WHERE artifact_type_id = 16";
                 queryresults = getEXIFArtifact.ExecuteReader();
 
                 while (queryresults.Read())
@@ -256,7 +268,7 @@ namespace InsightPreprocessor
                     String artifactID = queryresults.GetValue(0).ToString();
                     String objID = queryresults.GetValue(1).ToString();
 
-                    SQLiteDataReader fileQueryResults = new SQLiteDataReader();
+                    SQLiteDataReader fileQueryResults;
 
                     SQLiteCommand getFileInfo = new SQLiteCommand(sqldb);
                     getFileInfo.CommandText = "SELECT name, parent_path, mtime, atime FROM tsk_files WHERE obj_id = " + objID;
@@ -265,11 +277,58 @@ namespace InsightPreprocessor
                     fileQueryResults.Read();
                     String filename = fileQueryResults.GetValue(0).ToString();
                     String parentpath = fileQueryResults.GetValue(1).ToString();
-                    String modtime = fileQueryResults.GetValue(2).ToString();
-                    String accesstime = fileQueryResults.GetValue(3).ToString();
+                    String modtime = ConvertTimestamp(fileQueryResults.GetValue(2).ToString());
+                    String accesstime = ConvertTimestamp(fileQueryResults.GetValue(3).ToString());
+                    fileQueryResults.Close();
+                    
+                    //Get EXIF Timestamp
+                    //NOTE: The EXIF timestamp format seems to have changed between versions of Autopsy. In older versions, a string representation of the date is stored in the database,
+                    //whereas in newer versions of Autopsy, the EXIF timestamp is stored as an integer timestamp.
+                    getFileInfo.CommandText = "SELECT value_int64 FROM blackboard_attributes WHERE artifact_id = " + artifactID +" AND attribute_type_id = 2";
+                    String EXIFtimestamp;
+                    object EXIFtimestampresult = getFileInfo.ExecuteScalar();
+                    int foo; //Required to stop the TryParse method from bitching.
+                    if (EXIFtimestampresult != null && int.TryParse(EXIFtimestampresult.ToString(), out foo))
+                    {
+                        EXIFtimestamp = ConvertTimestamp(EXIFtimestampresult.ToString());
+                    }
+                    else if(EXIFtimestampresult != null && !int.TryParse(EXIFtimestampresult.ToString(), out foo))
+                    {
+                        EXIFtimestamp = EXIFtimestampresult.ToString();
+                    }
+                    else
+                    {
+                        EXIFtimestamp = "No EXIF timestamp found.";
+                    }
 
 
+                    //Get Camera Make
+                    getFileInfo.CommandText = "SELECT value_text FROM blackboard_attributes WHERE artifact_id = " + artifactID + " AND attribute_type_id = 19";
+                    object EXIFmakeresult = getFileInfo.ExecuteScalar();
+                    String EXIFmake;
+                    if (EXIFmakeresult != null)
+                    {
+                        EXIFmake = EXIFmakeresult.ToString();
+                    }
+                    else
+                    {
+                        EXIFmake = "No EXIF camera manufacturer found.";
+                    }
 
+                    //Get Camera Model
+                    getFileInfo.CommandText = "SELECT value_text FROM blackboard_attributes WHERE artifact_id = " + artifactID + " AND attribute_type_id = 18";
+                    object EXIFmodelresult = getFileInfo.ExecuteScalar();
+                    String EXIFmodel;
+                    if (EXIFmodelresult != null)
+                    {
+                        EXIFmodel = EXIFmodelresult.ToString();
+                    }
+                    else
+                    {
+                        EXIFmodel = "No EXIF camera model found.";
+                    }
+
+                    AddEvent("autexif" + artifactID, modtime, null, "EXIF Tagged File Modified", "Red", "The EXIF tagged file " + filename + "was modified.\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath + "\nEXIF Timestamp: " + EXIFtimestamp + "\nEXIF Camera Manufacturer: " + EXIFmake + "\nEXIF Camera Model " + EXIFmodel, null, null);
                 }
 
                 #endregion
@@ -282,6 +341,7 @@ namespace InsightPreprocessor
                 Console.ForegroundColor = ConsoleColor.DarkRed;
                 Console.WriteLine("Autopsy processing failed. Error: " + e.Message);
                 Console.ForegroundColor = ConsoleColor.White;
+                return false;
             }
 
             return true;
