@@ -64,7 +64,7 @@ namespace InsightPreprocessor
                     #region Dataset Search and Process logic
                     switch (file.Name)
                     {
-                        case "ghautopsy.db":
+                        case "autopsy.db":
                             Console.ForegroundColor = ConsoleColor.DarkGreen;
                             Console.WriteLine("Autopsy file found! Processing...");
                             Console.ForegroundColor = ConsoleColor.White;
@@ -349,7 +349,7 @@ namespace InsightPreprocessor
 
         public static bool ProcessL2TFile(String path)
         {
-            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("Log2Timeline processing not yet implemented.");
             Console.ForegroundColor = ConsoleColor.White;
             return false;
