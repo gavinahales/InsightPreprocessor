@@ -328,7 +328,7 @@ namespace InsightPreprocessor
                         EXIFmodel = "No EXIF camera model found.";
                     }
 
-                    AddEvent("autex" + artifactID, modtime, null, "EXIF Tagged File Modified", "Red", "The EXIF tagged file " + filename + "was modified.\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath + "\nEXIF Timestamp: " + EXIFtimestamp + "\nEXIF Camera Manufacturer: " + EXIFmake + "\nEXIF Camera Model " + EXIFmodel, null, null);
+                    AddEvent("autex" + artifactID, modtime, null, "EXIF Tagged File Modified", "Red", "The EXIF tagged file " + filename + " was modified.\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath + "\nEXIF Timestamp: " + EXIFtimestamp + "\nEXIF Camera Manufacturer: " + EXIFmake + "\nEXIF Camera Model " + EXIFmodel, null, parentpath + filename);
                 }
 
                 #endregion
