@@ -333,6 +333,48 @@ namespace InsightPreprocessor
 
                 #endregion
 
+                #region Get File Type Mismatches
+
+                SQLiteCommand getMismatchArtifact = new SQLiteCommand(sqldb);
+                getMismatchArtifact.CommandText = "SELECT artifact_id, obj_id FROM blackboard_artifacts WHERE artifact_type_id = 34";
+                queryresults = getMismatchArtifact.ExecuteReader();
+
+                while(queryresults.Read())
+                {
+                    String artifactID = queryresults.GetValue(0).ToString();
+                    String objID = queryresults.GetValue(1).ToString();
+
+                    SQLiteDataReader fileQueryResults;
+
+                    SQLiteCommand getFileInfo = new SQLiteCommand(sqldb);
+                    getFileInfo.CommandText = "SELECT name, parent_path, mtime, atime FROM tsk_files WHERE obj_id = " + objID;
+
+                    fileQueryResults = getFileInfo.ExecuteReader();
+                    fileQueryResults.Read();
+                    String filename = fileQueryResults.GetValue(0).ToString();
+                    String parentpath = fileQueryResults.GetValue(1).ToString();
+                    String modtime = ConvertTimestamp(fileQueryResults.GetValue(2).ToString());
+                    String accesstime = ConvertTimestamp(fileQueryResults.GetValue(3).ToString());
+                    fileQueryResults.Close();
+
+                    //Get detected file type, this is not attached to the same artifact for some reason.
+                    SQLiteCommand getDetectedTypeSubArtifact = new SQLiteCommand(sqldb);
+                    getDetectedTypeSubArtifact.CommandText = "SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = " + objID + " AND artifact_type_id = 1";
+                    SQLiteDataReader subArtifactQuery = getDetectedTypeSubArtifact.ExecuteReader();
+                    subArtifactQuery.Read();
+                    String subArtifact = subArtifactQuery.GetValue(0).ToString();
+
+                    SQLiteCommand getDetectedType = new SQLiteCommand(sqldb);
+                    getDetectedType.CommandText = "SELECT value_text FROM blackboard_artifacts WHERE artifact_id = " + subArtifact + " AND attribute_type_id = 62";
+                    SQLiteDataReader detectedTypeQuery = getDetectedType.ExecuteReader();
+                    detectedTypeQuery.Read();
+                    String detectedType = detectedTypeQuery.GetValue(0).ToString();
+
+                    AddEvent("auttm" + artifactID, modtime, null, "Potential File Type Mismatch", "Orange", "The file " + filename + " has an extension which does not mach it's actual file type signature. \nThe detected type is: " + detectedType + ".\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath, null, parentpath + filename);
+                }
+
+                #endregion
+
 
             }
 
