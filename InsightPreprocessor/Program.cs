@@ -178,7 +178,6 @@ namespace InsightPreprocessor
 
                 #endregion
 
-
                 #region Get Installed Programs
 
                 SQLiteCommand getprograms = new SQLiteCommand(sqldb);
@@ -215,7 +214,6 @@ namespace InsightPreprocessor
                 }
 
                 #endregion
-
 
                 #region Get Attached Devices
 
@@ -328,7 +326,7 @@ namespace InsightPreprocessor
                         EXIFmodel = "No EXIF camera model found.";
                     }
 
-                    AddEvent("autex" + artifactID, modtime, null, "EXIF Tagged File Modified", "Red", "The EXIF tagged file " + filename + " was modified.\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath + "\nEXIF Timestamp: " + EXIFtimestamp + "\nEXIF Camera Manufacturer: " + EXIFmake + "\nEXIF Camera Model " + EXIFmodel, null, parentpath + filename);
+                    AddEvent("autex" + artifactID, modtime, null, "EXIF Tagged File Modified", "Orange", "The EXIF tagged file " + filename + " was modified.\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath + "\nEXIF Timestamp: " + EXIFtimestamp + "\nEXIF Camera Manufacturer: " + EXIFmake + "\nEXIF Camera Model " + EXIFmodel, null, parentpath + filename);
                 }
 
                 #endregion
@@ -365,12 +363,12 @@ namespace InsightPreprocessor
                     String subArtifact = subArtifactQuery.GetValue(0).ToString();
 
                     SQLiteCommand getDetectedType = new SQLiteCommand(sqldb);
-                    getDetectedType.CommandText = "SELECT value_text FROM blackboard_artifacts WHERE artifact_id = " + subArtifact + " AND attribute_type_id = 62";
+                    getDetectedType.CommandText = "SELECT value_text FROM blackboard_attributes WHERE artifact_id = " + subArtifact + " AND attribute_type_id = 62";
                     SQLiteDataReader detectedTypeQuery = getDetectedType.ExecuteReader();
                     detectedTypeQuery.Read();
                     String detectedType = detectedTypeQuery.GetValue(0).ToString();
 
-                    AddEvent("auttm" + artifactID, modtime, null, "Potential File Type Mismatch", "Orange", "The file " + filename + " has an extension which does not mach it's actual file type signature. \nThe detected type is: " + detectedType + ".\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath, null, parentpath + filename);
+                    AddEvent("auttm" + artifactID, modtime, null, "Potential File Type Mismatch", "Red", "The file " + filename + " has an extension which does not mach it's actual file type signature. \nThe detected type is: " + detectedType + ".\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath, null, parentpath + filename);
                 }
 
                 #endregion
