@@ -15,15 +15,25 @@ namespace InsightPreprocessor
         static String projpath;
         static XmlWriter xmldoc;
         static bool CensorMode;
+        static bool FilterPre2kMode;
+        static string DatasetDrive;
 
         static void Main(string[] args)
         {
             Console.WriteLine("Enter path of project directory:");
             projpath = Console.ReadLine();
 
+            Console.WriteLine("Enter dataset drive letter:");
+            DatasetDrive = Console.ReadLine();
+            DatasetDrive = DatasetDrive + ":";
+
             Console.WriteLine("Enable censor mode? (Y/N)");
 
             String censor = Console.ReadLine();
+
+            Console.WriteLine("Enable Filter Pre-2k Mode? (Y/N)");
+            String pre2k = Console.ReadLine();
+
             bool processSuccess = true;
 
             if (censor == "Y" || censor == "y")
@@ -34,6 +44,16 @@ namespace InsightPreprocessor
             else
             {
                 CensorMode = false;
+            }
+
+            if (pre2k == "Y" || pre2k == "y")
+            {
+                FilterPre2kMode = true;
+                Console.WriteLine("Filter Pre-2k Mode Enabled: Events occuring before 1 Jan 2000 will be removed.");
+            }
+            else
+            {
+                FilterPre2kMode = false;
             }
 
             try
@@ -326,7 +346,7 @@ namespace InsightPreprocessor
                         EXIFmodel = "No EXIF camera model found.";
                     }
 
-                    AddEvent("autex" + artifactID, modtime, null, "EXIF Tagged File Modified", "Orange", "The EXIF tagged file " + filename + " was modified.\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath + "\nEXIF Timestamp: " + EXIFtimestamp + "\nEXIF Camera Manufacturer: " + EXIFmake + "\nEXIF Camera Model " + EXIFmodel, null, parentpath + filename);
+                    AddEvent("autex" + artifactID, modtime, null, "EXIF Tagged File Modified", "Orange", "The EXIF tagged file " + filename + " was modified.\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath + "\nEXIF Timestamp: " + EXIFtimestamp + "\nEXIF Camera Manufacturer: " + EXIFmake + "\nEXIF Camera Model " + EXIFmodel, null, DatasetDrive + parentpath + filename);
                 }
 
                 #endregion
@@ -368,7 +388,7 @@ namespace InsightPreprocessor
                     detectedTypeQuery.Read();
                     String detectedType = detectedTypeQuery.GetValue(0).ToString();
 
-                    AddEvent("auttm" + artifactID, modtime, null, "Potential File Type Mismatch", "Red", "The file " + filename + " has an extension which does not mach it's actual file type signature. \nThe detected type is: " + detectedType + ".\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath, null, parentpath + filename);
+                    AddEvent("auttm" + artifactID, modtime, null, "Potential File Type Mismatch", "Red", "The file " + filename + " has an extension which does not mach it's actual file type signature. \nThe detected type is: " + detectedType + ".\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath, null, DatasetDrive + parentpath + filename);
                 }
 
                 #endregion
@@ -398,16 +418,25 @@ namespace InsightPreprocessor
         public static void AddEvent(string id, string start, string end, string title, string colour, string description, string imagepath, string link)
         {
 
-            xmldoc.WriteStartElement("event");
-            xmldoc.WriteAttributeString("id", id);
-            xmldoc.WriteAttributeString("start", start);
-            if (end != null) xmldoc.WriteAttributeString("end", end);
-            xmldoc.WriteAttributeString("title", title);
-            xmldoc.WriteAttributeString("color", colour);
-            if (imagepath != null) xmldoc.WriteAttributeString("teaserimage", imagepath);
-            if (link != null) xmldoc.WriteAttributeString("link", link);
-            xmldoc.WriteString(description);
-            xmldoc.WriteEndElement();
+            if (FilterPre2kMode && DateTime.Parse(start).Year < 2000)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine("Event prior to year 2000 found. ID = "+id+". Omitting.");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+            else
+            {
+                xmldoc.WriteStartElement("event");
+                xmldoc.WriteAttributeString("id", id);
+                xmldoc.WriteAttributeString("start", start);
+                if (end != null) xmldoc.WriteAttributeString("end", end);
+                xmldoc.WriteAttributeString("title", title);
+                xmldoc.WriteAttributeString("color", colour);
+                if (imagepath != null) xmldoc.WriteAttributeString("teaserimage", imagepath);
+                if (link != null) xmldoc.WriteAttributeString("link", link);
+                xmldoc.WriteString(description);
+                xmldoc.WriteEndElement();
+            }
 
         }
 
