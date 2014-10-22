@@ -16,16 +16,16 @@ namespace InsightPreprocessor
         static XmlWriter xmldoc;
         static bool CensorMode;
         static bool FilterPre2kMode;
-        static string DatasetDrive;
+        //static string DatasetDrive;
 
         static void Main(string[] args)
         {
             Console.WriteLine("Enter path of project directory:");
             projpath = Console.ReadLine();
 
-            Console.WriteLine("Enter dataset drive letter:");
-            DatasetDrive = Console.ReadLine();
-            DatasetDrive = DatasetDrive + ":";
+            //Console.WriteLine("Enter dataset drive letter:");
+            //DatasetDrive = Console.ReadLine();
+            //DatasetDrive = DatasetDrive + ":";
 
             Console.WriteLine("Enable censor mode? (Y/N)");
 
@@ -346,7 +346,7 @@ namespace InsightPreprocessor
                         EXIFmodel = "No EXIF camera model found.";
                     }
 
-                    AddEvent("autex" + artifactID, modtime, null, "EXIF Tagged File Modified", "Orange", "The EXIF tagged file " + filename + " was modified.\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath + "\nEXIF Timestamp: " + EXIFtimestamp + "\nEXIF Camera Manufacturer: " + EXIFmake + "\nEXIF Camera Model " + EXIFmodel, null, DatasetDrive + parentpath + filename);
+                    AddEvent("autex" + artifactID, modtime, null, "EXIF Tagged File Modified", "Orange", "The EXIF tagged file " + filename + " was modified.\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath + "\nEXIF Timestamp: " + EXIFtimestamp + "\nEXIF Camera Manufacturer: " + EXIFmake + "\nEXIF Camera Model " + EXIFmodel, null, parentpath + filename);
                 }
 
                 #endregion
@@ -388,7 +388,7 @@ namespace InsightPreprocessor
                     detectedTypeQuery.Read();
                     String detectedType = detectedTypeQuery.GetValue(0).ToString();
 
-                    AddEvent("auttm" + artifactID, modtime, null, "Potential File Type Mismatch", "Red", "The file " + filename + " has an extension which does not mach it's actual file type signature. \nThe detected type is: " + detectedType + ".\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath, null, DatasetDrive + parentpath + filename);
+                    AddEvent("auttm" + artifactID, modtime, null, "Potential File Type Mismatch", "Red", "The file " + filename + " has an extension which does not mach it's actual file type signature. \nThe detected type is: " + detectedType + ".\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath, null, parentpath + filename);
                 }
 
                 #endregion
