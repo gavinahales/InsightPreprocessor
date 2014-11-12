@@ -388,7 +388,7 @@ namespace InsightPreprocessor
                     detectedTypeQuery.Read();
                     String detectedType = detectedTypeQuery.GetValue(0).ToString();
 
-                    AddEvent("auttm" + artifactID, modtime, null, "Potential File Type Mismatch", "Red", "The file " + filename + " has an extension which does not mach it's actual file type signature. \nThe detected type is: " + detectedType + ".\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath, null, parentpath + filename);
+                    AddEvent("auttm" + artifactID, modtime, null, "Potential File Type Mismatch", "Red", "The file " + filename + " has an extension which does not match it's actual file type signature. \nThe detected type is: " + detectedType + ".\nIt was last accessed on " + accesstime + ".\nParent Path: " + parentpath, null, parentpath + filename);
                 }
 
                 #endregion
