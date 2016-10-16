@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using System.Data.SQLite;
 using System.Xml;
@@ -20,7 +16,7 @@ namespace InsightPreprocessor
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Enter path of project directory:");
+            Console.WriteLine("Enter path of project directory (Enter a . if you want to use the current working directory):");
             projpath = Console.ReadLine();
 
             //Console.WriteLine("Enter dataset drive letter:");
